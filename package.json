@@ -10,7 +10,8 @@
   "husky": {
     "hooks": {
       "pre-commit": "npm run lint",
-      "pre-push": "npm run lint"
+      "pre-push": "npm run lint",
+      "prepare-commit-msg": "./tools/prepare-commit-msg.sh"
     }
   },
   "devDependencies": {
