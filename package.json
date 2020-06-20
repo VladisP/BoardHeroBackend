@@ -1,0 +1,22 @@
+{
+  "name": "boardherobackend",
+  "version": "1.0.0",
+  "description": "BoardHero app backend",
+  "scripts": {
+    "lint": "eslint \"tools/**/*.ts\" \"src/**/*.ts\" --no-fix",
+    "populate-db": "tsc --outFile ./tmp/populate.js ./tools/populateDB.ts && node ./tmp/populate.js"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run lint",
+      "pre-push": "npm run lint"
+    }
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^3.3.0",
+    "@typescript-eslint/parser": "^3.3.0",
+    "eslint": "^7.3.0",
+    "husky": "^4.2.5",
+    "typescript": "^3.9.5"
+  }
+}
