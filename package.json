@@ -4,6 +4,7 @@
   "description": "BoardHero app backend",
   "scripts": {
     "lint": "eslint \"tools/**/*.ts\" \"src/**/*.ts\" --no-fix",
+    "init-db": "./tools/init-db.sh",
     "populate-db": "tsc --outFile ./tmp/populate.js ./tools/populateDB.ts && node ./tmp/populate.js"
   },
   "husky": {

@@ -1,0 +1,16 @@
+cache:
+  paths:
+    - 'node_modules'
+
+stages:
+  - lint
+
+run-linter:
+  tags: [docker]
+  stage: lint
+  image:
+    name: 'node:lts'
+  script:
+    - npm i
+    - npm i -g eslint
+    - npm run lint
