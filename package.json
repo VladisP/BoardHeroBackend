@@ -5,8 +5,11 @@
   "scripts": {
     "lint": "eslint \"tools/**/*.ts\" \"src/**/*.ts\" --no-fix",
     "init-db": "tools/shell/init-db.sh",
+    "clear-games": "tools/shell/clear-games.sh",
     "populate-db": "tsc --project tools/ts/tsconfig.json && node ./tmp/populateDB.js",
-    "refresh-db": "npm run init-db && npm run populate-db"
+    "refresh-games": "npm run clear-games && npm run populate-db",
+    "clear-users": "tools/shell/clear-users.sh",
+    "select-all": "tools/shell/select-all.sh"
   },
   "husky": {
     "hooks": {
