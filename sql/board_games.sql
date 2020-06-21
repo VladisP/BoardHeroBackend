@@ -1,6 +1,6 @@
 CREATE TABLE board_games
 (
-    board_game_id   uuid     NOT NULL PRIMARY KEY,
+    board_game_id   varchar  NOT NULL PRIMARY KEY,
     game_name       varchar  NOT NULL UNIQUE,
     year_published  smallint NULL,
     min_players     smallint NULL,
@@ -24,26 +24,26 @@ CREATE TABLE board_games
 
 CREATE TABLE mechanics
 (
-    mechanic_id   uuid    NOT NULL PRIMARY KEY,
-    mechanic_name varchar NOT NULL UNIQUE
+    mechanic_id   varchar NOT NULL PRIMARY KEY,
+    mechanic_name varchar NOT NULL
 );
 
 CREATE TABLE categories
 (
-    category_id   uuid    NOT NULL PRIMARY KEY,
+    category_id   varchar NOT NULL PRIMARY KEY,
     category_name varchar NOT NULL UNIQUE
 );
 
 CREATE TABLE game_mechanic_int
 (
-    board_game_id uuid NOT NULL REFERENCES board_games (board_game_id),
-    mechanic_id   uuid NOT NULL REFERENCES mechanics (mechanic_id),
+    board_game_id varchar NOT NULL REFERENCES board_games (board_game_id) ON UPDATE RESTRICT ON DELETE CASCADE,
+    mechanic_id   varchar NOT NULL REFERENCES mechanics (mechanic_id) ON UPDATE RESTRICT ON DELETE CASCADE,
     PRIMARY KEY (board_game_id, mechanic_id)
 );
 
 CREATE TABLE game_category_int
 (
-    board_game_id uuid NOT NULL REFERENCES board_games (board_game_id),
-    category_id   uuid NOT NULL REFERENCES categories (category_id),
+    board_game_id varchar NOT NULL REFERENCES board_games (board_game_id) ON UPDATE RESTRICT ON DELETE CASCADE,
+    category_id   varchar NOT NULL REFERENCES categories (category_id) ON UPDATE RESTRICT ON DELETE CASCADE,
     PRIMARY KEY (board_game_id, category_id)
 );
