@@ -40,6 +40,17 @@ export async function getMechanics(): Promise<Array<Tag>> {
     return res.rows;
 }
 
+export async function getCategories(): Promise<Array<Tag>> {
+    const { pool } = ServerConfig.get();
+
+    const res = await pool.query<Tag>(
+        'SELECT category_id AS id, category_name AS name\n' +
+        'FROM categories;'
+    );
+
+    return res.rows;
+}
+
 async function select(pool: Pool): Promise<[Array<RawBoardGame>, Array<GameMechanicInt>, Array<GameCategoryInt>]> {
     const [resGames, resGameMech, resGameCat] = await Promise.all([
         pool.query<RawBoardGame>(

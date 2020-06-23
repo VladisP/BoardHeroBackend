@@ -1,5 +1,5 @@
 import * as express from 'express';
-import { getGames, getMechanics } from './service';
+import { getCategories, getGames, getMechanics } from './service';
 import { errorResponse, StatusCode, successResponse } from '../../common/responseSender';
 
 export const gamesRouter = express.Router();
@@ -22,5 +22,15 @@ const mechanicsHandler: express.RequestHandler = async function (req, res) {
     }
 };
 
+const categoriesHandler: express.RequestHandler = async function (req, res) {
+    try {
+        const categories = await getCategories();
+        successResponse(req, res, categories);
+    } catch (e) {
+        errorResponse(req, res, StatusCode.INTERNAL_ERROR, e);
+    }
+};
+
 gamesRouter.route('/').get(gamesHandler);
 gamesRouter.route('/mechanics/').get(mechanicsHandler);
+gamesRouter.route('/categories/').get(categoriesHandler);
