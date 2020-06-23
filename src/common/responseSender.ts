@@ -33,13 +33,13 @@ class ErrorResponse extends Response {
 }
 
 export function successResponse(req: ExpressRequest, res: ExpressResponse, data: unknown): void {
-    Logger.info(req.baseUrl);
+    Logger.info(req.baseUrl + req.url);
 
     res.status(StatusCode.OK).json(new SuccessResponse(data));
 }
 
 export function errorResponse(req: ExpressRequest, res: ExpressResponse, code: number, e: Error): void {
-    Logger.error(req.baseUrl, e);
+    Logger.error(req.baseUrl + req.url, e);
 
     res.status(code).json(new ErrorResponse(e.message));
 }

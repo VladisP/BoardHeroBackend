@@ -18,7 +18,7 @@ export interface BoardGame extends RawBoardGame {
     categories: Array<Tag>;
 }
 
-interface Tag {
+export interface Tag {
     id: string;
     name: string;
 }

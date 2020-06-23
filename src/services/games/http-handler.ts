@@ -1,5 +1,5 @@
 import * as express from 'express';
-import { getGames } from './service';
+import { getGames, getMechanics } from './service';
 import { errorResponse, StatusCode, successResponse } from '../../common/responseSender';
 
 export const gamesRouter = express.Router();
@@ -13,4 +13,14 @@ const gamesHandler: express.RequestHandler = async function (req, res) {
     }
 };
 
+const mechanicsHandler: express.RequestHandler = async function (req, res) {
+    try {
+        const mechanics = await getMechanics();
+        successResponse(req, res, mechanics);
+    } catch (e) {
+        errorResponse(req, res, StatusCode.INTERNAL_ERROR, e);
+    }
+};
+
 gamesRouter.route('/').get(gamesHandler);
+gamesRouter.route('/mechanics/').get(mechanicsHandler);

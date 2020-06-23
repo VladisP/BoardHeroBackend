@@ -1,5 +1,5 @@
 import { ServerConfig } from '../../config/config';
-import { BoardGame, RawBoardGame } from './model';
+import { BoardGame, RawBoardGame, Tag } from './model';
 import { Pool } from 'pg';
 
 interface GameMap {
@@ -27,6 +27,17 @@ export async function getGames(): Promise<Array<BoardGame>> {
     mergeGameCategories(gameMap, gameCats);
 
     return Object.values(gameMap);
+}
+
+export async function getMechanics(): Promise<Array<Tag>> {
+    const { pool } = ServerConfig.get();
+
+    const res = await pool.query<Tag>(
+        'SELECT mechanic_id AS id, mechanic_name AS name\n' +
+        'FROM mechanics;'
+    );
+
+    return res.rows;
 }
 
 async function select(pool: Pool): Promise<[Array<RawBoardGame>, Array<GameMechanicInt>, Array<GameCategoryInt>]> {
