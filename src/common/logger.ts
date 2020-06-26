@@ -1,10 +1,10 @@
 export class Logger {
-    static info(url: string): void {
-        console.log(`URL: ${url}: OK`);
+    static info(method: string, url: string): void {
+        console.log(`${method} ${url}: OK`);
     }
 
-    static error(url: string, error: Error): void {
-        console.error(`URL: ${url}: ERROR`);
+    static error(method: string, url: string, error: Error): void {
+        console.error(`${method} ${url}: ERROR`);
         console.error(error.stack);
     }
 }
