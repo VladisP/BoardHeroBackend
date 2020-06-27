@@ -5,7 +5,6 @@ CREATE TABLE users
     karma         integer     NOT NULL DEFAULT 0,
     created_at    timestamptz NOT NULL,
     info          text        NULL,
-    email         varchar     NOT NULL UNIQUE,
     password_hash varchar     NOT NULL
 );
 

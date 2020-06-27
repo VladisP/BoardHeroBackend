@@ -18,10 +18,14 @@ interface GameCategoryInt {
     category_name: string;
 }
 
+interface Likes {
+    likes_count: number;
+}
+
 export async function getGames(): Promise<Array<BoardGame>> {
     const { pool } = ServerConfig.get();
     const [rawGames, gameMechs, gameCats] = await select(pool);
-    const gameMap = createGameMap(rawGames);
+    const gameMap = createGameMap(await mapToBoardGames(rawGames));
 
     mergeGameMechanics(gameMap, gameMechs);
     mergeGameCategories(gameMap, gameCats);
@@ -51,6 +55,20 @@ export async function getCategories(): Promise<Array<Tag>> {
     return res.rows;
 }
 
+export async function getGameById(id: string): Promise<RawBoardGame> {
+    const { pool } = ServerConfig.get();
+
+    const res = await pool.query<RawBoardGame>(
+        'SELECT board_game_id AS id, game_name AS name, year_published, min_players,\n' +
+        '       max_players, min_playtime, max_playtime, min_age,\n' +
+        '       description, image_url, small_image_url, rating\n' +
+        'FROM board_games WHERE board_game_id=$1',
+        [id]
+    );
+
+    return res.rows[0];
+}
+
 async function select(pool: Pool): Promise<[Array<RawBoardGame>, Array<GameMechanicInt>, Array<GameCategoryInt>]> {
     const [resGames, resGameMech, resGameCat] = await Promise.all([
         pool.query<RawBoardGame>(
@@ -74,9 +92,19 @@ async function select(pool: Pool): Promise<[Array<RawBoardGame>, Array<GameMecha
     return [resGames.rows, resGameMech.rows, resGameCat.rows];
 }
 
-function createGameMap(rawGames: Array<RawBoardGame>): GameMap {
+async function mapToBoardGames(rawGames: Array<RawBoardGame>): Promise<Array<BoardGame>> {
+    const games = [] as Array<BoardGame>;
+
+    for (const rawGame of rawGames) {
+        games.push({ ...rawGame, mechanics: [], categories: [], likes_count: await getLikesCount(rawGame.id) });
+    }
+
+    return games;
+}
+
+function createGameMap(rawGames: Array<BoardGame>): GameMap {
     return rawGames.reduce((map, game) => {
-        map[game.id] = { ...game, mechanics: [], categories: [] };
+        map[game.id] = game;
         return map;
     }, {} as GameMap);
 }
@@ -97,4 +125,16 @@ function mergeGameCategories(gameMap: GameMap, gameCats: Array<GameCategoryInt>)
             name: gameCat.category_name
         });
     });
+}
+
+async function getLikesCount(id: string): Promise<number> {
+    const { pool } = ServerConfig.get();
+
+    const likesRes = await pool.query<Likes>(
+        'SELECT count(*) AS likes_count FROM favorite_game_records\n' +
+        'WHERE board_game_id=$1',
+        [id]
+    );
+
+    return likesRes.rows[0].likes_count;
 }
