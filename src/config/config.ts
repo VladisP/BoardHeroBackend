@@ -1,5 +1,6 @@
 import { config } from 'dotenv';
 import { Pool } from 'pg';
+import { createClient, RedisClient } from 'redis';
 
 export class ServerConfig {
     static config: ServerConfig | null = null;
@@ -8,6 +9,7 @@ export class ServerConfig {
     port: number;
     sessionSecret: string;
     pool: Pool;
+    redisClient: RedisClient;
 
     private constructor() {
         config();
@@ -19,7 +21,9 @@ export class ServerConfig {
             !process.env.DEV_DB_NAME ||
             !process.env.DEV_DB_HOST ||
             !process.env.DEV_DB_PORT ||
-            !process.env.SESSION_COOKIE_SECRET
+            !process.env.SESSION_COOKIE_SECRET ||
+            !process.env.REDIS_HOST ||
+            !process.env.REDIS_PORT
         ) {
             throw new Error('Please specify all env vars');
         }
@@ -33,6 +37,10 @@ export class ServerConfig {
             host: process.env.DEV_DB_HOST,
             port: Number.parseInt(process.env.DEV_DB_PORT)
         });
+        this.redisClient = createClient(
+            Number.parseInt(process.env.REDIS_PORT),
+            process.env.REDIS_HOST
+        );
     }
 
     static get(): ServerConfig {
