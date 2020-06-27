@@ -1,10 +1,16 @@
 import { ServerConfig } from '../../config/config';
-import { getGameById } from '../games/service';
+import { getGameById, updateGameRating } from '../games/service';
 import { ErrorMessage } from '../../common/errorMessages';
 import { v4 as uuidv4 } from 'uuid';
 
-export async function createReview(gameId: string, userId: string, title: string, description: string, rating: number): Promise<Review> {
+interface ReviewResponse {
+    review: Review;
+    new_game_rating: number;
+}
+
+export async function createReview(gameId: string, userId: string, title: string, description: string, rating: number): Promise<ReviewResponse> {
     const { pool } = ServerConfig.get();
+    const client = await pool.connect();
     const game = await getGameById(gameId);
 
     if (!game) {
@@ -17,13 +23,26 @@ export async function createReview(gameId: string, userId: string, title: string
         throw new Error(ErrorMessage.REVIEW_EXIST);
     }
 
-    const reviewRes = await pool.query<Review>(
-        'INSERT INTO reviews(review_id, board_game_id, user_id, title, description, rating, created_at) ' +
-        'VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;',
-        [uuidv4(), gameId, userId, title, description, rating, new Date()]
-    );
+    try {
+        await client.query('BEGIN');
 
-    return reviewRes.rows[0];
+        const reviewRes = await client.query<Review>(
+            'INSERT INTO reviews(review_id, board_game_id, user_id, title, description, rating, created_at) ' +
+            'VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;',
+            [uuidv4(), gameId, userId, title, description, rating, new Date()]
+        );
+
+        const newRating = await updateGameRating(client, gameId);
+
+        await client.query('COMMIT');
+
+        return { review: reviewRes.rows[0], new_game_rating: newRating };
+    } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+    } finally {
+        client.release();
+    }
 }
 
 async function getReviewByIds(gameId: string, userId: string): Promise<Review> {

@@ -20,7 +20,7 @@ const createReviewHandler: express.RequestHandler = async function (req: express
         }
 
         try {
-            const review = await createReview(
+            const reviewResponse = await createReview(
                 req.params.gameId,
                 req.session.userId,
                 req.body.title,
@@ -28,7 +28,7 @@ const createReviewHandler: express.RequestHandler = async function (req: express
                 req.body.rating
             );
 
-            successResponse(req, res, review);
+            successResponse(req, res, reviewResponse);
         } catch (e) {
             switch ((e as Error).message) {
             case ErrorMessage.GAME_DOESNT_EXIST:
