@@ -1,6 +1,6 @@
 import * as express from 'express';
 import * as core from 'express-serve-static-core';
-import { createUser } from './service';
+import { createUser, getUser } from './service';
 import { errorResponse, StatusCode, successResponse } from '../../common/responseSender';
 import { ErrorMessage } from '../../common/errorMessages';
 
@@ -31,4 +31,18 @@ const signUpHandler: express.RequestHandler = async function (req: express.Reque
     }
 };
 
+const getUserHandler: express.RequestHandler = async function (req, res) {
+    if (req.session && req.session.userId) {
+        try {
+            const user = await getUser(req.session.userId);
+            successResponse(req, res, user);
+        } catch (e) {
+            errorResponse(req, res, StatusCode.INTERNAL_ERROR, e);
+        }
+    } else {
+        errorResponse(req, res, StatusCode.UNAUTHORIZED, new Error(ErrorMessage.UNAUTHORIZED));
+    }
+};
+
 userRouter.route('/sign-up/').post(signUpHandler);
+userRouter.route('/').get(getUserHandler);

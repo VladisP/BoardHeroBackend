@@ -28,6 +28,17 @@ export async function createUser(username: string, password: string): Promise<Us
     return userRes.rows[0];
 }
 
+export async function getUser(id: string): Promise<User> {
+    const { pool } = ServerConfig.get();
+
+    const userRes = await pool.query<User>(
+        'SELECT * FROM users WHERE user_id=$1',
+        [id]
+    );
+
+    return userRes.rows[0];
+}
+
 async function hashPassword(password: string): Promise<string> {
     const salt = await genSalt();
     return await hash(password, salt);
