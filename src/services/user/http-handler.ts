@@ -1,7 +1,7 @@
 import * as express from 'express';
 import * as core from 'express-serve-static-core';
 import { promisify } from 'util';
-import { authUser, createUser, getUser } from './service';
+import { addFavoriteGame, authUser, createUser, getUser } from './service';
 import { errorResponse, StatusCode, successResponse } from '../../common/responseSender';
 import { ErrorMessage } from '../../common/errorMessages';
 import { User } from './model';
@@ -68,7 +68,21 @@ const getUserHandler: express.RequestHandler = async function (req, res) {
     }
 };
 
+const addFavoriteGameHandler: express.RequestHandler = async function (req, res) {
+    if (req.session && req.session.userId) {
+        try {
+            await addFavoriteGame(req.session.userId, req.params.gameId);
+            successResponse(req, res, null);
+        } catch (e) {
+            errorResponse(req, res, StatusCode.INTERNAL_ERROR, e);
+        }
+    } else {
+        errorResponse(req, res, StatusCode.UNAUTHORIZED, new Error(ErrorMessage.UNAUTHORIZED));
+    }
+};
+
 userRouter.route('/sign-up/').post(authHandlerMaker(createUser));
 userRouter.route('/sign-in/').post(authHandlerMaker(authUser));
 userRouter.route('/sign-out/').post(signOutHandler);
+userRouter.route('/favorite-game/:gameId/').post(addFavoriteGameHandler);
 userRouter.route('/').get(getUserHandler);

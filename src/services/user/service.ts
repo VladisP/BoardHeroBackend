@@ -62,6 +62,15 @@ export async function getUser(id: string): Promise<User> {
     return userRes.rows[0];
 }
 
+export async function addFavoriteGame(userId: string, gameId: string): Promise<void> {
+    const { pool } = ServerConfig.get();
+
+    await pool.query(
+        'INSERT INTO favorite_game_records(board_game_id, user_id, created_at) VALUES ($1, $2, $3)',
+        [gameId, userId, new Date()]
+    );
+}
+
 async function hashPassword(password: string): Promise<string> {
     const salt = await genSalt();
     return await hash(password, salt);
