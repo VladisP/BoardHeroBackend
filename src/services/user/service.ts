@@ -2,7 +2,7 @@ import { User } from './model';
 import { ServerConfig } from '../../config/config';
 import { ErrorMessage } from '../../common/errorMessages';
 import { v4 as uuidv4 } from 'uuid';
-import { genSalt, hash } from 'bcrypt';
+import { genSalt, hash, compare } from 'bcrypt';
 
 export async function createUser(username: string, password: string): Promise<User> {
     const { pool } = ServerConfig.get();
@@ -26,6 +26,29 @@ export async function createUser(username: string, password: string): Promise<Us
     );
 
     return userRes.rows[0];
+}
+
+export async function authUser(username: string, password: string): Promise<User> {
+    const { pool } = ServerConfig.get();
+
+    const existRes = await pool.query<User>(
+        'SELECT * FROM users WHERE user_name=$1',
+        [username]
+    );
+
+    const user = existRes.rows[0];
+
+    if (!user) {
+        throw new Error(ErrorMessage.USER_DOESNT_EXIST);
+    }
+
+    const matchPassword = await compare(password, user.password_hash);
+
+    if (!matchPassword) {
+        throw new Error(ErrorMessage.INCORRECT_CREDENTIALS);
+    }
+
+    return user;
 }
 
 export async function getUser(id: string): Promise<User> {
