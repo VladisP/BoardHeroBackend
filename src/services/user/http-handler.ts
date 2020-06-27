@@ -74,7 +74,8 @@ const addFavoriteGameHandler: express.RequestHandler = async function (req, res)
             await addFavoriteGame(req.session.userId, req.params.gameId);
             successResponse(req, res, null);
         } catch (e) {
-            errorResponse(req, res, StatusCode.INTERNAL_ERROR, e);
+            const code = (<Error>e).message === ErrorMessage.GAME_DOESNT_EXIST ? StatusCode.BAD_REQUEST : StatusCode.INTERNAL_ERROR;
+            errorResponse(req, res, code, e);
         }
     } else {
         errorResponse(req, res, StatusCode.UNAUTHORIZED, new Error(ErrorMessage.UNAUTHORIZED));

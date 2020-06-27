@@ -5,4 +5,10 @@ export interface User {
     created_at: Date;
     info: string;
     password_hash: string;
+    favorite_games?: Array<FavoriteGameRecord>;
+}
+
+export interface FavoriteGameRecord {
+    id: string;
+    created_at: Date;
 }

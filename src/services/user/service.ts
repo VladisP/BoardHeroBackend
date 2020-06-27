@@ -1,16 +1,14 @@
-import { User } from './model';
+import { FavoriteGameRecord, User } from './model';
 import { ServerConfig } from '../../config/config';
 import { ErrorMessage } from '../../common/errorMessages';
 import { v4 as uuidv4 } from 'uuid';
-import { genSalt, hash, compare } from 'bcrypt';
+import { compare, genSalt, hash } from 'bcrypt';
+import { getGameById } from '../games/service';
+import { QueryResult } from 'pg';
 
 export async function createUser(username: string, password: string): Promise<User> {
     const { pool } = ServerConfig.get();
-
-    const existRes = await pool.query(
-        'SELECT * FROM users WHERE user_name=$1',
-        [username]
-    );
+    const existRes = await getUserByName(username);
 
     if (existRes.rows.length > 0) {
         throw new Error(ErrorMessage.USER_EXIST);
@@ -29,14 +27,8 @@ export async function createUser(username: string, password: string): Promise<Us
 }
 
 export async function authUser(username: string, password: string): Promise<User> {
-    const { pool } = ServerConfig.get();
-
-    const existRes = await pool.query<User>(
-        'SELECT * FROM users WHERE user_name=$1',
-        [username]
-    );
-
-    const user = existRes.rows[0];
+    const userRes = await getUserByName(username);
+    const user = userRes.rows[0];
 
     if (!user) {
         throw new Error(ErrorMessage.USER_DOESNT_EXIST);
@@ -48,22 +40,36 @@ export async function authUser(username: string, password: string): Promise<User
         throw new Error(ErrorMessage.INCORRECT_CREDENTIALS);
     }
 
+    const favoriteGamesRes = await getFavoriteGames(user.user_id);
+
+    user.favorite_games = favoriteGamesRes.rows;
+
     return user;
 }
 
 export async function getUser(id: string): Promise<User> {
-    const { pool } = ServerConfig.get();
+    const [userRes, favoriteGamesRes] = await Promise.all([
+        getUserById(id),
+        getFavoriteGames(id)
+    ]);
 
-    const userRes = await pool.query<User>(
-        'SELECT * FROM users WHERE user_id=$1',
-        [id]
-    );
+    if (!userRes.rows[0]) {
+        throw new Error(ErrorMessage.USER_DOESNT_EXIST);
+    }
 
-    return userRes.rows[0];
+    const user = userRes.rows[0];
+    user.favorite_games = favoriteGamesRes.rows;
+
+    return user;
 }
 
 export async function addFavoriteGame(userId: string, gameId: string): Promise<void> {
     const { pool } = ServerConfig.get();
+    const game = await getGameById(gameId);
+
+    if (!game) {
+        throw new Error(ErrorMessage.GAME_DOESNT_EXIST);
+    }
 
     await pool.query(
         'INSERT INTO favorite_game_records(board_game_id, user_id, created_at) VALUES ($1, $2, $3)',
@@ -74,4 +80,31 @@ export async function addFavoriteGame(userId: string, gameId: string): Promise<v
 async function hashPassword(password: string): Promise<string> {
     const salt = await genSalt();
     return await hash(password, salt);
+}
+
+async function getUserById(id: string): Promise<QueryResult<User>> {
+    const { pool } = ServerConfig.get();
+
+    return pool.query<User>(
+        'SELECT * FROM users WHERE user_id=$1',
+        [id]
+    );
+}
+
+async function getUserByName(username: string): Promise<QueryResult<User>> {
+    const { pool } = ServerConfig.get();
+
+    return pool.query<User>(
+        'SELECT * FROM users WHERE user_name=$1',
+        [username]
+    );
+}
+
+async function getFavoriteGames(userId: string): Promise<QueryResult<FavoriteGameRecord>> {
+    const { pool } = ServerConfig.get();
+
+    return pool.query<FavoriteGameRecord>(
+        'SELECT board_game_id AS id, created_at FROM favorite_game_records WHERE user_id=$1',
+        [userId]
+    );
 }

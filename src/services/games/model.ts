@@ -16,6 +16,7 @@ export interface RawBoardGame {
 export interface BoardGame extends RawBoardGame {
     mechanics: Array<Tag>;
     categories: Array<Tag>;
+    likes_count: number;
 }
 
 export interface Tag {
