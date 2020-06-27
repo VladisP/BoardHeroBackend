@@ -77,6 +77,16 @@ export async function addFavoriteGame(userId: string, gameId: string): Promise<v
     );
 }
 
+export async function deleteFavoriteGame(userId: string, gameId: string): Promise<void> {
+    const { pool } = ServerConfig.get();
+
+    await pool.query(
+        'DELETE FROM favorite_game_records ' +
+        'WHERE board_game_id=$1 AND user_id=$2',
+        [gameId, userId]
+    );
+}
+
 async function hashPassword(password: string): Promise<string> {
     const salt = await genSalt();
     return await hash(password, salt);
