@@ -2,6 +2,8 @@ import { ServerConfig } from '../../config/config';
 import { getGameById, updateGameRating } from '../games/service';
 import { ErrorMessage } from '../../common/errorMessages';
 import { v4 as uuidv4 } from 'uuid';
+import { UserReview } from '../user/model';
+import { GameReviews } from '../games/model';
 
 interface ReviewResponse {
     review: Review;
@@ -43,6 +45,28 @@ export async function createReview(gameId: string, userId: string, title: string
     } finally {
         client.release();
     }
+}
+
+export async function getUserReviews(userId: string): Promise<Array<UserReview>> {
+    const { pool } = ServerConfig.get();
+
+    const reviewsRes = await pool.query<UserReview>(
+        'SELECT review_id AS id FROM reviews WHERE user_id=$1',
+        [userId]
+    );
+
+    return reviewsRes.rows;
+}
+
+export async function getGameReviews(gameId: string): Promise<Array<GameReviews>> {
+    const { pool } = ServerConfig.get();
+
+    const reviewsRes = await pool.query<GameReviews>(
+        'SELECT review_id AS id FROM reviews WHERE board_game_id=$1',
+        [gameId]
+    );
+
+    return reviewsRes.rows;
 }
 
 async function getReviewByIds(gameId: string, userId: string): Promise<Review> {

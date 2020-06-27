@@ -1,6 +1,7 @@
 import { ServerConfig } from '../../config/config';
 import { BoardGame, RawBoardGame, Tag } from './model';
 import { Pool, PoolClient } from 'pg';
+import { getGameReviews } from '../review/service';
 
 interface GameMap {
     [key: string]: BoardGame;
@@ -112,7 +113,13 @@ async function mapToBoardGames(rawGames: Array<RawBoardGame>): Promise<Array<Boa
     const games = [] as Array<BoardGame>;
 
     for (const rawGame of rawGames) {
-        games.push({ ...rawGame, mechanics: [], categories: [], likes_count: await getLikesCount(rawGame.id) });
+        games.push({
+            ...rawGame,
+            mechanics: [],
+            categories: [],
+            likes_count: await getLikesCount(rawGame.id),
+            reviews: await getGameReviews(rawGame.id)
+        });
     }
 
     return games;

@@ -16,10 +16,15 @@ export interface RawBoardGame {
 export interface BoardGame extends RawBoardGame {
     mechanics: Array<Tag>;
     categories: Array<Tag>;
+    reviews: Array<GameReviews>;
     likes_count: number;
 }
 
 export interface Tag {
     id: string;
     name: string;
+}
+
+export interface GameReviews {
+    id: string;
 }

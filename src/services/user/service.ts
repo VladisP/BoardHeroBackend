@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { compare, genSalt, hash } from 'bcrypt';
 import { getGameById } from '../games/service';
 import { QueryResult } from 'pg';
+import { getUserReviews } from '../review/service';
 
 export async function createUser(username: string, password: string): Promise<User> {
     const { pool } = ServerConfig.get();
@@ -41,16 +42,19 @@ export async function authUser(username: string, password: string): Promise<User
     }
 
     const favoriteGamesRes = await getFavoriteGames(user.user_id);
+    const userReviews = await getUserReviews(user.user_id);
 
     user.favorite_games = favoriteGamesRes.rows;
+    user.reviews = userReviews;
 
     return user;
 }
 
 export async function getUser(id: string): Promise<User> {
-    const [userRes, favoriteGamesRes] = await Promise.all([
+    const [userRes, favoriteGamesRes, userReviews] = await Promise.all([
         getUserById(id),
-        getFavoriteGames(id)
+        getFavoriteGames(id),
+        getUserReviews(id)
     ]);
 
     if (!userRes.rows[0]) {
@@ -59,6 +63,7 @@ export async function getUser(id: string): Promise<User> {
 
     const user = userRes.rows[0];
     user.favorite_games = favoriteGamesRes.rows;
+    user.reviews = userReviews;
 
     return user;
 }
