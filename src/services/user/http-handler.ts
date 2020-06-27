@@ -1,5 +1,6 @@
 import * as express from 'express';
 import * as core from 'express-serve-static-core';
+import { promisify } from 'util';
 import { authUser, createUser, getUser } from './service';
 import { errorResponse, StatusCode, successResponse } from '../../common/responseSender';
 import { ErrorMessage } from '../../common/errorMessages';
@@ -41,6 +42,19 @@ const authHandlerMaker = function (authMethod: (username: string, password: stri
     };
 };
 
+const signOutHandler: express.RequestHandler = async function (req, res) {
+    try {
+        if (req.session) {
+            const destroySession = promisify(req.session.destroy.bind(req.session));
+            await destroySession();
+        }
+
+        successResponse(req, res, null);
+    } catch (e) {
+        errorResponse(req, res, StatusCode.INTERNAL_ERROR, e);
+    }
+};
+
 const getUserHandler: express.RequestHandler = async function (req, res) {
     if (req.session && req.session.userId) {
         try {
@@ -56,4 +70,5 @@ const getUserHandler: express.RequestHandler = async function (req, res) {
 
 userRouter.route('/sign-up/').post(authHandlerMaker(createUser));
 userRouter.route('/sign-in/').post(authHandlerMaker(authUser));
+userRouter.route('/sign-out/').post(signOutHandler);
 userRouter.route('/').get(getUserHandler);
