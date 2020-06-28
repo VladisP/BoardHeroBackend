@@ -3,7 +3,7 @@ import { getGameById, updateGameRating } from '../games/service';
 import { ErrorMessage } from '../../common/errorMessages';
 import { v4 as uuidv4 } from 'uuid';
 import { UserReview } from '../user/model';
-import { GameReviews } from '../games/model';
+import { GameReview } from '../games/model';
 
 interface ReviewResponse {
     review: Review;
@@ -58,10 +58,10 @@ export async function getUserReviews(userId: string): Promise<Array<UserReview>>
     return reviewsRes.rows;
 }
 
-export async function getGameReviews(gameId: string): Promise<Array<GameReviews>> {
+export async function getGameReviews(gameId: string): Promise<Array<GameReview>> {
     const { pool } = ServerConfig.get();
 
-    const reviewsRes = await pool.query<GameReviews>(
+    const reviewsRes = await pool.query<GameReview>(
         'SELECT review_id AS id FROM reviews WHERE board_game_id=$1',
         [gameId]
     );

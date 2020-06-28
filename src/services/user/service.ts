@@ -68,7 +68,7 @@ export async function getUser(id: string): Promise<User> {
     return user;
 }
 
-export async function addFavoriteGame(userId: string, gameId: string): Promise<void> {
+export async function addFavoriteGame(userId: string, gameId: string): Promise<FavoriteGameRecord> {
     const { pool } = ServerConfig.get();
     const game = await getGameById(gameId);
 
@@ -76,13 +76,16 @@ export async function addFavoriteGame(userId: string, gameId: string): Promise<v
         throw new Error(ErrorMessage.GAME_DOESNT_EXIST);
     }
 
-    await pool.query(
-        'INSERT INTO favorite_game_records(board_game_id, user_id, created_at) VALUES ($1, $2, $3)',
+    const res = await pool.query<FavoriteGameRecord>(
+        'INSERT INTO favorite_game_records(board_game_id, user_id, created_at) ' +
+        'VALUES ($1, $2, $3) RETURNING board_game_id AS id, created_at;',
         [gameId, userId, new Date()]
     );
+
+    return res.rows[0];
 }
 
-export async function deleteFavoriteGame(userId: string, gameId: string): Promise<void> {
+export async function deleteFavoriteGame(userId: string, gameId: string): Promise<null> {
     const { pool } = ServerConfig.get();
 
     await pool.query(
@@ -90,6 +93,8 @@ export async function deleteFavoriteGame(userId: string, gameId: string): Promis
         'WHERE board_game_id=$1 AND user_id=$2',
         [gameId, userId]
     );
+
+    return null;
 }
 
 async function hashPassword(password: string): Promise<string> {
