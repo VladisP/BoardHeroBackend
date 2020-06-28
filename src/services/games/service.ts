@@ -1,6 +1,7 @@
 import { ServerConfig } from '../../config/config';
 import { BoardGame, RawBoardGame, Tag } from './model';
-import { Pool } from 'pg';
+import { Pool, PoolClient } from 'pg';
+import { getGameReviews } from '../review/service';
 
 interface GameMap {
     [key: string]: BoardGame;
@@ -20,6 +21,10 @@ interface GameCategoryInt {
 
 interface Likes {
     likes_count: number;
+}
+
+interface Rating {
+    rating: number;
 }
 
 export async function getGames(): Promise<Array<BoardGame>> {
@@ -69,6 +74,18 @@ export async function getGameById(id: string): Promise<RawBoardGame> {
     return res.rows[0];
 }
 
+export async function updateGameRating(client: PoolClient, id: string): Promise<number> {
+    const res = await client.query<Rating>(
+        'UPDATE board_games\n' +
+        'SET rating = (SELECT (SELECT sum(rating) FROM reviews WHERE board_game_id = $1)::real /\n' +
+        '                     (SELECT count(rating) FROM reviews WHERE board_game_id = $1))\n' +
+        'WHERE board_game_id=$1 RETURNING rating;',
+        [id]
+    );
+
+    return res.rows[0].rating;
+}
+
 async function select(pool: Pool): Promise<[Array<RawBoardGame>, Array<GameMechanicInt>, Array<GameCategoryInt>]> {
     const [resGames, resGameMech, resGameCat] = await Promise.all([
         pool.query<RawBoardGame>(
@@ -96,7 +113,13 @@ async function mapToBoardGames(rawGames: Array<RawBoardGame>): Promise<Array<Boa
     const games = [] as Array<BoardGame>;
 
     for (const rawGame of rawGames) {
-        games.push({ ...rawGame, mechanics: [], categories: [], likes_count: await getLikesCount(rawGame.id) });
+        games.push({
+            ...rawGame,
+            mechanics: [],
+            categories: [],
+            likes_count: await getLikesCount(rawGame.id),
+            reviews: await getGameReviews(rawGame.id)
+        });
     }
 
     return games;

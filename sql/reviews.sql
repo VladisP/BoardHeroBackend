@@ -5,7 +5,7 @@ CREATE TABLE reviews
     user_id       uuid        NOT NULL REFERENCES users (user_id) ON UPDATE RESTRICT ON DELETE CASCADE,
     title         varchar     NOT NULL,
     description   text        NOT NULL,
-    rating        real        NOT NULL,
+    rating        integer     NOT NULL,
     created_at    timestamptz NOT NULL,
     score         integer     NOT NULL DEFAULT 0,
     UNIQUE (board_game_id, user_id),

@@ -4,7 +4,7 @@ import { promisify } from 'util';
 import { addFavoriteGame, authUser, createUser, deleteFavoriteGame, getUser } from './service';
 import { errorResponse, StatusCode, successResponse } from '../../common/responseSender';
 import { ErrorMessage } from '../../common/errorMessages';
-import { User } from './model';
+import { FavoriteGameRecord, User } from './model';
 
 export const userRouter = express.Router();
 
@@ -68,12 +68,12 @@ const getUserHandler: express.RequestHandler = async function (req, res) {
     }
 };
 
-const favoriteGameHandlerMaker = function (method: (userId: string, gameId: string) => Promise<void>): express.RequestHandler {
+const favoriteGameHandlerMaker = function (method: (userId: string, gameId: string) => Promise<FavoriteGameRecord | null>): express.RequestHandler {
     return async function (req, res) {
         if (req.session && req.session.userId) {
             try {
-                await method(req.session.userId, req.params.gameId);
-                successResponse(req, res, null);
+                const data = await method(req.session.userId, req.params.gameId);
+                successResponse(req, res, data);
             } catch (e) {
                 const code = (<Error>e).message === ErrorMessage.GAME_DOESNT_EXIST ? StatusCode.BAD_REQUEST : StatusCode.INTERNAL_ERROR;
                 errorResponse(req, res, code, e);
