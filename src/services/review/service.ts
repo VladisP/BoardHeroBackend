@@ -2,11 +2,10 @@ import { ServerConfig } from '../../config/config';
 import { getGameById, updateGameRating } from '../games/service';
 import { ErrorMessage } from '../../common/errorMessages';
 import { v4 as uuidv4 } from 'uuid';
-import { UserReview } from '../user/model';
-import { GameReview } from '../games/model';
+import { IdReview } from './model';
 
 interface ReviewResponse {
-    review: Review;
+    review_id: string;
     new_game_rating: number;
 }
 
@@ -28,9 +27,9 @@ export async function createReview(gameId: string, userId: string, title: string
     try {
         await client.query('BEGIN');
 
-        const reviewRes = await client.query<Review>(
+        const reviewRes = await client.query<IdReview>(
             'INSERT INTO reviews(review_id, board_game_id, user_id, title, description, rating, created_at) ' +
-            'VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;',
+            'VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING review_id AS id;',
             [uuidv4(), gameId, userId, title, description, rating, new Date()]
         );
 
@@ -38,7 +37,7 @@ export async function createReview(gameId: string, userId: string, title: string
 
         await client.query('COMMIT');
 
-        return { review: reviewRes.rows[0], new_game_rating: newRating };
+        return { review_id: reviewRes.rows[0].id, new_game_rating: newRating };
     } catch (e) {
         await client.query('ROLLBACK');
         throw e;
@@ -47,10 +46,10 @@ export async function createReview(gameId: string, userId: string, title: string
     }
 }
 
-export async function getUserReviews(userId: string): Promise<Array<UserReview>> {
+export async function getUserReviews(userId: string): Promise<Array<IdReview>> {
     const { pool } = ServerConfig.get();
 
-    const reviewsRes = await pool.query<UserReview>(
+    const reviewsRes = await pool.query<IdReview>(
         'SELECT review_id AS id FROM reviews WHERE user_id=$1',
         [userId]
     );
@@ -58,10 +57,10 @@ export async function getUserReviews(userId: string): Promise<Array<UserReview>>
     return reviewsRes.rows;
 }
 
-export async function getGameReviews(gameId: string): Promise<Array<GameReview>> {
+export async function getGameReviews(gameId: string): Promise<Array<IdReview>> {
     const { pool } = ServerConfig.get();
 
-    const reviewsRes = await pool.query<GameReview>(
+    const reviewsRes = await pool.query<IdReview>(
         'SELECT review_id AS id FROM reviews WHERE board_game_id=$1',
         [gameId]
     );
@@ -69,11 +68,11 @@ export async function getGameReviews(gameId: string): Promise<Array<GameReview>>
     return reviewsRes.rows;
 }
 
-async function getReviewByIds(gameId: string, userId: string): Promise<Review> {
+async function getReviewByIds(gameId: string, userId: string): Promise<IdReview> {
     const { pool } = ServerConfig.get();
 
-    const reviewRes = await pool.query<Review>(
-        'SELECT * FROM reviews WHERE board_game_id=$1 AND user_id=$2',
+    const reviewRes = await pool.query<IdReview>(
+        'SELECT review_id AS id FROM reviews WHERE board_game_id=$1 AND user_id=$2',
         [gameId, userId]
     );
 

@@ -1,3 +1,5 @@
+import { IdReview } from '../review/model';
+
 export interface RawBoardGame {
     id: string;
     name: string;
@@ -16,15 +18,11 @@ export interface RawBoardGame {
 export interface BoardGame extends RawBoardGame {
     mechanics: Array<Tag>;
     categories: Array<Tag>;
-    reviews: Array<GameReview>;
+    reviews: Array<IdReview>;
     likes_count: number;
 }
 
 export interface Tag {
     id: string;
     name: string;
-}
-
-export interface GameReview {
-    id: string;
 }
