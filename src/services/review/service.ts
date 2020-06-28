@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { IdReview, Review, ReviewRating } from './model';
 import { PoolClient } from 'pg';
 import { updateUserKarma } from '../user/service';
+import { UserRating } from '../user/model';
 
 interface ReviewResponse {
     review_id: string;
@@ -127,6 +128,17 @@ export async function updateReviewRating(reviewId: string, userId: string, isPos
     } finally {
         client.release();
     }
+}
+
+export async function getRatingsByUser(userId: string): Promise<Array<UserRating>> {
+    const { pool } = ServerConfig.get();
+
+    const res = await pool.query<UserRating>(
+        'SELECT review_id, is_positive FROM review_ratings WHERE user_id=$1',
+        [userId]
+    );
+
+    return res.rows;
 }
 
 async function getReviewByIds(gameId: string, userId: string): Promise<IdReview> {

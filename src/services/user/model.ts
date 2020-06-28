@@ -8,10 +8,16 @@ export interface User {
     info: string;
     password_hash: string;
     favorite_games?: Array<FavoriteGameRecord>;
-    reviews?: Array<IdReview>
+    reviews?: Array<IdReview>;
+    ratings?: Array<UserRating>;
 }
 
 export interface FavoriteGameRecord {
     id: string;
     created_at: Date;
+}
+
+export interface UserRating {
+    review_id: string;
+    is_positive: boolean;
 }

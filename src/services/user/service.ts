@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { compare, genSalt, hash } from 'bcrypt';
 import { getGameById } from '../games/service';
 import { PoolClient, QueryResult } from 'pg';
-import { getUserReviews } from '../review/service';
+import { getRatingsByUser, getUserReviews } from '../review/service';
 
 export async function createUser(username: string, password: string): Promise<User> {
     const { pool } = ServerConfig.get();
@@ -41,20 +41,25 @@ export async function authUser(username: string, password: string): Promise<User
         throw new Error(ErrorMessage.INCORRECT_CREDENTIALS);
     }
 
-    const favoriteGamesRes = await getFavoriteGames(user.user_id);
-    const userReviews = await getUserReviews(user.user_id);
+    const [favoriteGamesRes, userReviews, userRatings] = await Promise.all([
+        getFavoriteGames(user.user_id),
+        getUserReviews(user.user_id),
+        getRatingsByUser(user.user_id)
+    ]);
 
     user.favorite_games = favoriteGamesRes.rows;
     user.reviews = userReviews;
+    user.ratings = userRatings;
 
     return user;
 }
 
 export async function getUser(id: string): Promise<User> {
-    const [userRes, favoriteGamesRes, userReviews] = await Promise.all([
+    const [userRes, favoriteGamesRes, userReviews, userRatings] = await Promise.all([
         getUserById(id),
         getFavoriteGames(id),
-        getUserReviews(id)
+        getUserReviews(id),
+        getRatingsByUser(id)
     ]);
 
     if (!userRes.rows[0]) {
@@ -64,6 +69,7 @@ export async function getUser(id: string): Promise<User> {
     const user = userRes.rows[0];
     user.favorite_games = favoriteGamesRes.rows;
     user.reviews = userReviews;
+    user.ratings = userRatings;
 
     return user;
 }
