@@ -6,5 +6,6 @@ export enum ErrorMessage {
     INCORRECT_CREDENTIALS = 'Incorrect username or password',
     GAME_DOESNT_EXIST = 'The requested board game does not exist',
     REVIEW_EXIST = 'The user has already written a review for this game',
-    REVIEW_DOESNT_EXIST = 'The requested review does not exist'
+    REVIEW_DOESNT_EXIST = 'The requested review does not exist',
+    INCORRECT_RATING = 'Incorrect rating conversion'
 }

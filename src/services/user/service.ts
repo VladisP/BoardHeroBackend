@@ -4,7 +4,7 @@ import { ErrorMessage } from '../../common/errorMessages';
 import { v4 as uuidv4 } from 'uuid';
 import { compare, genSalt, hash } from 'bcrypt';
 import { getGameById } from '../games/service';
-import { QueryResult } from 'pg';
+import { PoolClient, QueryResult } from 'pg';
 import { getUserReviews } from '../review/service';
 
 export async function createUser(username: string, password: string): Promise<User> {
@@ -95,6 +95,28 @@ export async function deleteFavoriteGame(userId: string, gameId: string): Promis
     );
 
     return null;
+}
+
+export async function updateUserKarma(client: PoolClient, userId: string, isPositive: boolean): Promise<void> {
+    if (isPositive) {
+        await incUserKarma(client, userId);
+    } else {
+        await decUserKarma(client, userId);
+    }
+}
+
+async function incUserKarma(client: PoolClient, userId: string): Promise<void> {
+    await client.query(
+        'UPDATE users SET karma=karma+1 WHERE user_id=$1',
+        [userId]
+    );
+}
+
+async function decUserKarma(client: PoolClient, userId: string): Promise<void> {
+    await client.query(
+        'UPDATE users SET karma=karma-1 WHERE user_id=$1',
+        [userId]
+    );
 }
 
 async function hashPassword(password: string): Promise<string> {

@@ -2,16 +2,22 @@ import { ServerConfig } from '../../config/config';
 import { getGameById, updateGameRating } from '../games/service';
 import { ErrorMessage } from '../../common/errorMessages';
 import { v4 as uuidv4 } from 'uuid';
-import { IdReview, Review } from './model';
+import { IdReview, Review, ReviewRating } from './model';
+import { PoolClient } from 'pg';
+import { updateUserKarma } from '../user/service';
 
 interface ReviewResponse {
     review_id: string;
     new_game_rating: number;
 }
 
+interface RatingResponse {
+    is_positive: boolean | null;
+    new_score: number;
+}
+
 export async function createReview(gameId: string, userId: string, title: string, description: string, rating: number): Promise<ReviewResponse> {
     const { pool } = ServerConfig.get();
-    const client = await pool.connect();
     const game = await getGameById(gameId);
 
     if (!game) {
@@ -23,6 +29,8 @@ export async function createReview(gameId: string, userId: string, title: string
     if (review) {
         throw new Error(ErrorMessage.REVIEW_EXIST);
     }
+
+    const client = await pool.connect();
 
     try {
         await client.query('BEGIN');
@@ -83,6 +91,44 @@ export async function getReviewById(id: string): Promise<Review> {
     return reviewRes.rows[0];
 }
 
+export async function updateReviewRating(reviewId: string, userId: string, isPositive: boolean): Promise<RatingResponse> {
+    const review = await getReviewById(reviewId);
+
+    if (!review) {
+        throw new Error(ErrorMessage.REVIEW_DOESNT_EXIST);
+    }
+
+    const rating = await getReviewRating(reviewId, userId);
+
+    if (rating && ((rating.is_positive && isPositive) || (!rating.is_positive && !isPositive))) {
+        throw new Error(ErrorMessage.INCORRECT_RATING);
+    }
+
+    const client = await ServerConfig.get().pool.connect();
+
+    try {
+        await client.query('BEGIN');
+        const is_positive = rating ? null : isPositive;
+
+        if (!rating) {
+            await insertReviewRating(client, reviewId, userId, isPositive);
+        } else {
+            await deleteReviewRating(client, reviewId, userId);
+        }
+
+        const new_score = await updateReviewScore(client, reviewId, isPositive);
+        await updateUserKarma(client, review.user_id, isPositive);
+        await client.query('COMMIT');
+
+        return { is_positive, new_score };
+    } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+    } finally {
+        client.release();
+    }
+}
+
 async function getReviewByIds(gameId: string, userId: string): Promise<IdReview> {
     const { pool } = ServerConfig.get();
 
@@ -92,4 +138,52 @@ async function getReviewByIds(gameId: string, userId: string): Promise<IdReview>
     );
 
     return reviewRes.rows[0];
+}
+
+async function getReviewRating(reviewId: string, userId: string): Promise<ReviewRating> {
+    const { pool } = ServerConfig.get();
+
+    const ratingRes = await pool.query<ReviewRating>(
+        'SELECT * FROM review_ratings WHERE review_id=$1 AND user_id=$2',
+        [reviewId, userId]
+    );
+
+    return ratingRes.rows[0];
+}
+
+async function insertReviewRating(client: PoolClient, reviewId: string, userId: string, isPositive: boolean): Promise<void> {
+    await client.query(
+        'INSERT INTO review_ratings(review_id, user_id, is_positive) ' +
+        'VALUES ($1, $2, $3)',
+        [reviewId, userId, isPositive]
+    );
+}
+
+async function deleteReviewRating(client: PoolClient, reviewId: string, userId: string): Promise<void> {
+    await client.query(
+        'DELETE FROM review_ratings WHERE review_id=$1 AND user_id=$2',
+        [reviewId, userId]
+    );
+}
+
+async function updateReviewScore(client: PoolClient, reviewId: string, isPositive: boolean): Promise<number> {
+    return isPositive ? incReviewScore(client, reviewId) : decReviewScore(client, reviewId);
+}
+
+async function incReviewScore(client: PoolClient, reviewId: string): Promise<number> {
+    const res = await client.query<{ score: number }>(
+        'UPDATE reviews SET score=score+1 WHERE review_id=$1 RETURNING score;',
+        [reviewId]
+    );
+
+    return res.rows[0].score;
+}
+
+async function decReviewScore(client: PoolClient, reviewId: string): Promise<number> {
+    const res = await client.query<{ score: number }>(
+        'UPDATE reviews SET score=score-1 WHERE review_id=$1 RETURNING score;',
+        [reviewId]
+    );
+
+    return res.rows[0].score;
 }

@@ -12,3 +12,9 @@ export interface Review {
 export interface IdReview {
     id: string;
 }
+
+export interface ReviewRating {
+    review_id: string;
+    user_id: string;
+    is_positive: boolean;
+}
