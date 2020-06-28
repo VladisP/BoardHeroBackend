@@ -2,7 +2,7 @@ import * as express from 'express';
 import { errorResponse, StatusCode, successResponse } from '../../common/responseSender';
 import { ErrorMessage } from '../../common/errorMessages';
 import * as core from 'express-serve-static-core';
-import { createReview } from './service';
+import { createReview, getReviewById } from './service';
 
 export const reviewRouter = express.Router();
 
@@ -44,4 +44,15 @@ const createReviewHandler: express.RequestHandler = async function (req: express
     }
 };
 
+const getReviewHandler: express.RequestHandler = async function (req, res) {
+    try {
+        const review = await getReviewById(req.params.reviewId);
+        successResponse(req, res, review);
+    } catch (e) {
+        const code = (<Error>e).message === ErrorMessage.REVIEW_DOESNT_EXIST ? StatusCode.BAD_REQUEST : StatusCode.INTERNAL_ERROR;
+        errorResponse(req, res, code, e);
+    }
+};
+
 reviewRouter.route('/:gameId/').post(createReviewHandler);
+reviewRouter.route('/:reviewId/').get(getReviewHandler);

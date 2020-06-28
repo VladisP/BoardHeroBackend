@@ -2,7 +2,7 @@ import { ServerConfig } from '../../config/config';
 import { getGameById, updateGameRating } from '../games/service';
 import { ErrorMessage } from '../../common/errorMessages';
 import { v4 as uuidv4 } from 'uuid';
-import { IdReview } from './model';
+import { IdReview, Review } from './model';
 
 interface ReviewResponse {
     review_id: string;
@@ -66,6 +66,21 @@ export async function getGameReviews(gameId: string): Promise<Array<IdReview>> {
     );
 
     return reviewsRes.rows;
+}
+
+export async function getReviewById(id: string): Promise<Review> {
+    const { pool } = ServerConfig.get();
+
+    const reviewRes = await pool.query<Review>(
+        'SELECT * FROM reviews WHERE review_id=$1',
+        [id]
+    );
+
+    if (!reviewRes.rows[0]) {
+        throw new Error(ErrorMessage.REVIEW_DOESNT_EXIST);
+    }
+
+    return reviewRes.rows[0];
 }
 
 async function getReviewByIds(gameId: string, userId: string): Promise<IdReview> {
